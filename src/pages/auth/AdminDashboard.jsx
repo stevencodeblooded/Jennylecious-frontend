@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   TextInput,
   TextArea,
@@ -9,9 +9,18 @@ import {
 import Button from "../../components/shared/Button";
 import OrderDetailsModal from "../../components/order/OrderDetailsModal";
 import CustomerDetailsModal from "../../components/order/CustomerDetailsModal";
-import products, { categories } from "../../data/products";
+import { useAuth } from "../../context/AuthContext";
+import { 
+  productService, 
+  orderService, 
+  userService, 
+  settingsService 
+} from "../../utils/api";
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
+  const { currentUser, isAuthenticated, isLoading } = useAuth();
+
   const [activeTab, setActiveTab] = useState("products");
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isAddingProduct, setIsAddingProduct] = useState(false);
@@ -19,119 +28,288 @@ const AdminDashboard = () => {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  // New states for modals
+  // Data states
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [settings, setSettings] = useState({});
+
+  console.log(settings);
+
+  // Loading states
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
+  const [isLoadingCustomers, setIsLoadingCustomers] = useState(false);
+  const [isLoadingSettings, setIsLoadingSettings] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Modal states
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
 
-  // Mock data for orders and customers
-  const orders = [
-    {
-      id: "ORD-1234",
-      date: "2023-04-15T10:30:00",
-      total: 49.99,
-      status: "Delivered",
-      customer: {
-        name: "Jane Doe",
-        email: "jane@example.com",
-        phone: "(555) 123-4567",
-        address: "123 Main St, Apt 4B, Sweet City, SC 12345",
-      },
-      items: [{ id: 1, name: "Chocolate Cake", quantity: 1, price: 49.99 }],
-      notes: "",
+  // Form data for settings
+  const [settingsData, setSettingsData] = useState({
+    storeName: "",
+    contactEmail: "",
+    phone: "",
+    address: "",
+    payment: {
+      mpesaConsumerKey: "",
+      mpesaConsumerSecret: "",
+      mpesaPasskey: "",
+      businessShortCode: "",
     },
-    {
-      id: "ORD-5678",
-      date: "2023-04-12T15:45:00",
-      total: 74.98,
-      status: "Processing",
-      customer: {
-        name: "John Smith",
-        email: "john@example.com",
-        phone: "(555) 987-6543",
-        address: "456 Oak Lane, Sweet City, SC 12345",
-      },
-      items: [
-        { id: 2, name: "Red Velvet Cupcakes", quantity: 2, price: 24.99 },
-        { id: 3, name: "French Macarons", quantity: 1, price: 25.0 },
-      ],
-      notes: "",
-    },
-    {
-      id: "ORD-9012",
-      date: "2023-04-10T09:15:00",
-      total: 149.99,
-      status: "Pending",
-      customer: {
-        name: "Sarah Johnson",
-        email: "sarah@example.com",
-        phone: "(555) 456-7890",
-        address: "789 Bakery Street, Sweet City, SC 12345",
-      },
-      items: [
-        { id: 4, name: "Wedding Cake (Deposit)", quantity: 1, price: 149.99 },
-      ],
-      notes: "",
-    },
-  ];
+  });
 
-  const customers = [
-    {
-      id: 1,
-      name: "Jane Doe",
-      email: "jane@example.com",
-      phone: "(555) 123-4567",
-      address: "123 Main St, Apt 4B, Sweet City, SC 12345",
-      joinDate: "2023-01-15",
-      orders: 5,
-      totalSpent: 249.95,
-      newsletter: true,
-      notes: "",
-    },
-    {
-      id: 2,
-      name: "John Smith",
-      email: "john@example.com",
-      phone: "(555) 987-6543",
-      address: "456 Oak Lane, Sweet City, SC 12345",
-      joinDate: "2023-02-03",
-      orders: 2,
-      totalSpent: 124.97,
-      newsletter: false,
-      notes: "",
-    },
-    {
-      id: 3,
-      name: "Sarah Johnson",
-      email: "sarah@example.com",
-      phone: "(555) 456-7890",
-      address: "789 Bakery Street, Sweet City, SC 12345",
-      joinDate: "2023-03-17",
-      orders: 1,
-      totalSpent: 149.99,
-      newsletter: true,
-      notes: "",
-    },
-  ];
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [categoryFormData, setCategoryFormData] = useState({
+    name: "",
+    description: "",
+    slug: "",
+    image: "",
+  });
 
-  // Handler to open order details modal
-  const handleViewOrder = (order) => {
-    setSelectedOrder(order);
+  // Reset category form
+  const resetCategoryForm = () => {
+    setCategoryFormData({
+      name: "",
+      description: "",
+      slug: "",
+      image: "",
+    });
   };
 
-  // Handler to open customer details modal
-  const handleViewCustomer = (customer) => {
-    setSelectedCustomer(customer);
+  // Generate slug from name
+  const generateSlug = (name) => {
+    return name
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "");
   };
 
-  // Handler to update order status
-  const handleUpdateOrderStatus = (orderId, newStatus) => {
-    // In a real app, this would be an API call
-    const updatedOrders = orders.map((order) =>
-      order.id === orderId ? { ...order, status: newStatus } : order
-    );
-    console.log(updatedOrders);
-    console.log(`Updating order ${orderId} to status: ${newStatus}`);
-    // You would typically update the orders state or call an API here
+  // Handle category name change with auto-slug generation
+  const handleCategoryNameChange = (e) => {
+    const name = e.target.value;
+    setCategoryFormData({
+      ...categoryFormData,
+      name,
+      slug: generateSlug(name),
+    });
+  };
+
+  // Handle other category form input changes
+  const handleCategoryFormChange = (e) => {
+    const { name, value } = e.target;
+    setCategoryFormData({
+      ...categoryFormData,
+      [name]: value,
+    });
+  };
+
+  // Select category to edit
+  const handleSelectCategory = (category) => {
+    setSelectedCategory(category);
+    setIsAddingCategory(false);
+
+    setCategoryFormData({
+      name: category.name,
+      description: category.description || "",
+      slug: category.slug || "",
+      image: category.image || "",
+    });
+  };
+
+  // Add new category
+  const handleAddNewCategory = () => {
+    setSelectedCategory(null);
+    setIsAddingCategory(true);
+    resetCategoryForm();
+  };
+
+  // Submit category form
+  const handleCategorySubmit = async (e) => {
+    e.preventDefault();
+    setSubmitError("");
+    setSubmitSuccess(false);
+
+    if (!categoryFormData.name) {
+      setSubmitError("Category name is required");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      if (isAddingCategory) {
+        await productService.createCategory(categoryFormData);
+        setSubmitSuccess(true);
+        resetCategoryForm();
+        setIsAddingCategory(false);
+      } else {
+        await productService.updateCategory(
+          selectedCategory._id,
+          categoryFormData
+        );
+        setSubmitSuccess(true);
+      }
+
+      fetchCategories();
+
+      setTimeout(() => {
+        setSubmitSuccess(false);
+      }, 3000);
+    } catch (error) {
+      console.error("Error saving category:", error);
+      setSubmitError(error.response?.data?.error || "Failed to save category");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Delete category
+  const handleDeleteCategory = async () => {
+    if (!selectedCategory) return;
+
+    if (
+      window.confirm(
+        `Are you sure you want to delete ${selectedCategory.name}? This may affect products in this category.`
+      )
+    ) {
+      setIsSubmitting(true);
+
+      try {
+        await productService.deleteCategory(selectedCategory._id);
+        setSubmitSuccess(true);
+        setSelectedCategory(null);
+
+        fetchCategories();
+
+        setTimeout(() => {
+          setSubmitSuccess(false);
+        }, 3000);
+      } catch (error) {
+        console.error("Error deleting category:", error);
+        setSubmitError(
+          error.response?.data?.error || "Failed to delete category"
+        );
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
+  };
+
+  // Check if user is authenticated and is admin
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      navigate("/login");
+    } else if (!isLoading && isAuthenticated && currentUser?.role !== "admin") {
+      navigate("/"); // Redirect non-admin users to homepage
+    }
+  }, [isAuthenticated, isLoading, currentUser, navigate]);
+
+  // Load data based on active tab
+  useEffect(() => {
+    if (isAuthenticated && currentUser?.role === "admin") {
+      if (activeTab === "products") {
+        fetchProducts();
+        fetchCategories();
+      } else if (activeTab === "categories") {
+        fetchCategories();
+      } else if (activeTab === "orders") {
+        fetchOrders();
+      } else if (activeTab === "customers") {
+        fetchCustomers();
+      } else if (activeTab === "settings") {
+        fetchSettings();
+      }
+    }
+  }, [activeTab, isAuthenticated, currentUser]);
+
+  // Fetch products
+  const fetchProducts = async () => {
+    setIsLoadingProducts(true);
+    try {
+      const response = await productService.getProducts();
+      setProducts(response.data.data);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      setSubmitError("Failed to load products");
+    } finally {
+      setIsLoadingProducts(false);
+    }
+  };
+
+  // Fetch categories
+  const fetchCategories = async () => {
+    try {
+      const response = await productService.getCategories();
+      setCategories(response.data.data);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    }
+  };
+
+  // Fetch orders
+  const fetchOrders = async () => {
+    setIsLoadingOrders(true);
+    try {
+      const response = await orderService.getAllOrders();
+      setOrders(response.data.data);
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+      setSubmitError("Failed to load orders");
+    } finally {
+      setIsLoadingOrders(false);
+    }
+  };
+
+  // Fetch customers
+  const fetchCustomers = async () => {
+    setIsLoadingCustomers(true);
+    try {
+      const response = await userService.getUsers();
+      // Filter to only show customers (not admins)
+      const customerUsers = response.data.data.filter(
+        (user) => user.role === "customer"
+      );
+      setCustomers(customerUsers);
+    } catch (error) {
+      console.error("Error fetching customers:", error);
+      setSubmitError("Failed to load customers");
+    } finally {
+      setIsLoadingCustomers(false);
+    }
+  };
+
+  // Fetch settings
+  const fetchSettings = async () => {
+    setIsLoadingSettings(true);
+    try {
+      const response = await settingsService.getAllSettings();
+      const settingsData = response.data.data;
+      setSettings(settingsData);
+
+      // Update settings form data
+      setSettingsData({
+        storeName: settingsData.storeName || "",
+        contactEmail: settingsData.contactEmail || "",
+        phone: settingsData.phone || "",
+        address: settingsData.address || "",
+        payment: {
+          mpesaConsumerKey: settingsData.payment?.mpesaConsumerKey || "",
+          mpesaConsumerSecret: settingsData.payment?.mpesaConsumerSecret || "",
+          mpesaPasskey: settingsData.payment?.mpesaPasskey || "",
+          businessShortCode: settingsData.payment?.businessShortCode || "",
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching settings:", error);
+      setSubmitError("Failed to load settings");
+    } finally {
+      setIsLoadingSettings(false);
+    }
   };
 
   // New product form state
@@ -146,6 +324,21 @@ const AdminDashboard = () => {
     isFeatured: false,
     customizable: false,
   });
+
+  // Reset product form
+  const resetProductForm = () => {
+    setProductFormData({
+      name: "",
+      category: "",
+      price: "",
+      description: "",
+      image: "",
+      allergens: [],
+      isAvailable: true,
+      isFeatured: false,
+      customizable: false,
+    });
+  };
 
   // Filter products based on search term
   const filteredProducts = products.filter(
@@ -162,6 +355,27 @@ const AdminDashboard = () => {
       ...productFormData,
       [name]: type === "checkbox" ? checked : value,
     });
+  };
+
+  // Handle settings form input changes
+  const handleSettingsChange = (e) => {
+    const { name, value } = e.target;
+
+    if (name.startsWith("payment.")) {
+      const paymentField = name.split(".")[1];
+      setSettingsData({
+        ...settingsData,
+        payment: {
+          ...settingsData.payment,
+          [paymentField]: value,
+        },
+      });
+    } else {
+      setSettingsData({
+        ...settingsData,
+        [name]: value,
+      });
+    }
   };
 
   // Handle allergens multi-select
@@ -196,7 +410,7 @@ const AdminDashboard = () => {
       description: product.description,
       image: product.image,
       allergens: product.allergens || [],
-      isAvailable: product.isAvailable || true,
+      isAvailable: product.isAvailable !== false, // Default to true if undefined
       isFeatured: product.isFeatured || false,
       customizable: product.customizable || false,
     });
@@ -206,25 +420,14 @@ const AdminDashboard = () => {
   const handleAddNewProduct = () => {
     setSelectedProduct(null);
     setIsAddingProduct(true);
-
-    // Reset form data
-    setProductFormData({
-      name: "",
-      category: "",
-      price: "",
-      description: "",
-      image: "",
-      allergens: [],
-      isAvailable: true,
-      isFeatured: false,
-      customizable: false,
-    });
+    resetProductForm();
   };
 
   // Handle product form submission
-  const handleProductSubmit = (e) => {
+  const handleProductSubmit = async (e) => {
     e.preventDefault();
     setSubmitError("");
+    setSubmitSuccess(false);
 
     // Validate the form
     if (
@@ -236,39 +439,121 @@ const AdminDashboard = () => {
       return;
     }
 
-    // In a real application, this would be an API call to create/update the product
-    setTimeout(() => {
-      console.log("Product submitted:", productFormData);
-      setSubmitSuccess(true);
+    setIsSubmitting(true);
 
-      // Reset after success message
+    try {
+      // Format the product data
+      const productData = {
+        ...productFormData,
+        price: parseFloat(productFormData.price),
+      };
+
+      if (isAddingProduct) {
+        // Create new product
+        await productService.createProduct(productData);
+        setSubmitSuccess(true);
+        resetProductForm();
+        setIsAddingProduct(false);
+      } else {
+        // Update existing product
+        await productService.updateProduct(selectedProduct._id, productData);
+        setSubmitSuccess(true);
+      }
+
+      // Refresh products list
+      fetchProducts();
+
+      // Hide success message after 3 seconds
       setTimeout(() => {
         setSubmitSuccess(false);
-        if (isAddingProduct) {
-          setIsAddingProduct(false);
-          setSelectedProduct(null);
-        }
       }, 3000);
-    }, 1000);
+    } catch (error) {
+      console.error("Error saving product:", error);
+      setSubmitError(error.response?.data?.error || "Failed to save product");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle settings form submission
+  const handleSettingsSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitError("");
+    setSubmitSuccess(false);
+    setIsSubmitting(true);
+
+    try {
+      await settingsService.updateSettings(settingsData);
+      setSubmitSuccess(true);
+
+      // Hide success message after 3 seconds
+      setTimeout(() => {
+        setSubmitSuccess(false);
+      }, 3000);
+    } catch (error) {
+      console.error("Error saving settings:", error);
+      setSubmitError(error.response?.data?.error || "Failed to save settings");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Handle deleting a product
-  const handleDeleteProduct = () => {
+  const handleDeleteProduct = async () => {
     if (!selectedProduct) return;
 
     // Confirm deletion
     if (
       window.confirm(`Are you sure you want to delete ${selectedProduct.name}?`)
     ) {
-      // In a real application, this would be an API call to delete the product
-      console.log("Deleting product:", selectedProduct.id);
-      setSubmitSuccess(true);
+      setIsSubmitting(true);
 
-      // Reset after success message
-      setTimeout(() => {
-        setSubmitSuccess(false);
+      try {
+        await productService.deleteProduct(selectedProduct._id);
+        setSubmitSuccess(true);
         setSelectedProduct(null);
-      }, 3000);
+
+        // Refresh products list
+        fetchProducts();
+
+        // Hide success message after 3 seconds
+        setTimeout(() => {
+          setSubmitSuccess(false);
+        }, 3000);
+      } catch (error) {
+        console.error("Error deleting product:", error);
+        setSubmitError(
+          error.response?.data?.error || "Failed to delete product"
+        );
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
+  };
+
+  // Handler to open order details modal
+  const handleViewOrder = (order) => {
+    setSelectedOrder(order);
+  };
+
+  // Handler to open customer details modal
+  const handleViewCustomer = (customer) => {
+    setSelectedCustomer(customer);
+  };
+
+  // Handler to update order status
+  const handleUpdateOrderStatus = async (orderId, newStatus) => {
+    try {
+      await orderService.updateOrderStatus(orderId, newStatus);
+
+      // Refresh orders list
+      fetchOrders();
+
+      // Close the modal
+      setSelectedOrder(null);
+    } catch (error) {
+      console.error("Error updating order status:", error);
+      alert("Failed to update order status");
     }
   };
 
@@ -284,6 +569,27 @@ const AdminDashboard = () => {
     "Fish",
     "Shellfish",
   ];
+
+  // Format date
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-pink-500"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || currentUser?.role !== "admin") {
+    return null; // Will redirect in useEffect
+  }
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -325,12 +631,16 @@ const AdminDashboard = () => {
                 </div>
 
                 <div className="divide-y divide-gray-200 max-h-96 overflow-y-auto">
-                  {filteredProducts.length > 0 ? (
+                  {isLoadingProducts ? (
+                    <div className="p-4 text-center">
+                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-pink-500"></div>
+                    </div>
+                  ) : filteredProducts.length > 0 ? (
                     filteredProducts.map((product) => (
                       <div
-                        key={product.id}
+                        key={product._id}
                         className={`p-4 cursor-pointer hover:bg-gray-50 ${
-                          selectedProduct && selectedProduct.id === product.id
+                          selectedProduct && selectedProduct._id === product._id
                             ? "bg-pink-50"
                             : ""
                         }`}
@@ -342,6 +652,10 @@ const AdminDashboard = () => {
                               src={product.image}
                               alt={product.name}
                               className="w-full h-full object-cover"
+                              onError={(e) =>
+                                (e.target.src =
+                                  "https://via.placeholder.com/150?text=Cake")
+                              }
                             />
                           </div>
                           <div>
@@ -397,7 +711,7 @@ const AdminDashboard = () => {
                             >
                               <option value="">Select a category</option>
                               {categories.map((category) => (
-                                <option key={category.id} value={category.id}>
+                                <option key={category._id} value={category.id}>
                                   {category.name}
                                 </option>
                               ))}
@@ -422,7 +736,7 @@ const AdminDashboard = () => {
                             name="image"
                             value={productFormData.image}
                             onChange={handleProductFormChange}
-                            placeholder="/assets/images/products/example.jpg"
+                            placeholder="/uploads/products/example.jpg"
                           />
                         </div>
 
@@ -513,12 +827,13 @@ const AdminDashboard = () => {
                         </div>
 
                         <div className="flex justify-between">
-                          {selectedProduct && (
+                          {selectedProduct && !isAddingProduct && (
                             <Button
                               type="button"
                               variant="outline"
                               onClick={handleDeleteProduct}
                               className="text-red-500 border-red-500 hover:bg-red-50"
+                              disabled={isSubmitting}
                             >
                               Delete Product
                             </Button>
@@ -531,11 +846,20 @@ const AdminDashboard = () => {
                                 setSelectedProduct(null);
                                 setIsAddingProduct(false);
                               }}
+                              disabled={isSubmitting}
                             >
                               Cancel
                             </Button>
-                            <Button type="submit" variant="primary">
-                              {isAddingProduct ? "Add Product" : "Save Changes"}
+                            <Button
+                              type="submit"
+                              variant="primary"
+                              disabled={isSubmitting}
+                            >
+                              {isSubmitting
+                                ? "Saving..."
+                                : isAddingProduct
+                                ? "Add Product"
+                                : "Save Changes"}
                             </Button>
                           </div>
                         </div>
@@ -582,102 +906,114 @@ const AdminDashboard = () => {
               Order Management
             </h3>
 
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Order ID
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Customer
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Date
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Total
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Status
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {orders.map((order) => (
-                    <tr key={order.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {order.id}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {order.customer.name}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {order.customer.email}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {new Date(order.date).toLocaleDateString()}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          ${order.total.toFixed(2)}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            order.status === "Delivered"
-                              ? "bg-green-100 text-green-800"
-                              : order.status === "Processing"
-                              ? "bg-blue-100 text-blue-800"
-                              : order.status === "Pending"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
+            {isLoadingOrders ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-pink-500"></div>
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                {orders.length > 0 ? (
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                         >
-                          {order.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button
-                          onClick={() => handleViewOrder(order)}
-                          className="text-pink-600 hover:text-pink-900"
+                          Order ID
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                         >
-                          View
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                          Customer
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Date
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Total
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Status
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {orders.map((order) => (
+                        <tr key={order._id}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">
+                              {order.orderNumber}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">
+                              {order.customer.name}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {order.customer.email}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">
+                              {formatDate(order.orderDate)}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">
+                              ${order.total.toFixed(2)}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span
+                              className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                order.status === "Delivered"
+                                  ? "bg-green-100 text-green-800"
+                                  : order.status === "Processing"
+                                  ? "bg-blue-100 text-blue-800"
+                                  : order.status === "Pending"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : "bg-gray-100 text-gray-800"
+                              }`}
+                            >
+                              {order.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button
+                              onClick={() => handleViewOrder(order)}
+                              className="text-pink-600 hover:text-pink-900"
+                            >
+                              View
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className="p-8 text-center">
+                    <p className="text-gray-500">No orders found</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         );
 
@@ -688,88 +1024,303 @@ const AdminDashboard = () => {
               Customer Management
             </h3>
 
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Name
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Email
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Phone
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Join Date
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Orders
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {customers.map((customer) => (
-                    <tr key={customer.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {customer.name}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {customer.email}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {customer.phone}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {customer.joinDate}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <div className="text-sm text-gray-900">
-                          {customer.orders}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button
-                          onClick={() => handleViewCustomer(customer)}
-                          className="text-pink-600 hover:text-pink-900"
+            {isLoadingCustomers ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-pink-500"></div>
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                {customers.length > 0 ? (
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                         >
-                          View
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                          Name
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Email
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Phone
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Join Date
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Orders
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {customers.map((customer) => (
+                        <tr key={customer._id}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">
+                              {customer.firstName} {customer.lastName}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">
+                              {customer.email}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">
+                              {customer.phone}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">
+                              {formatDate(customer.joinDate)}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                            <div className="text-sm text-gray-900">
+                              {customer.orders?.length || 0}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button
+                              onClick={() => handleViewCustomer(customer)}
+                              className="text-pink-600 hover:text-pink-900"
+                            >
+                              View
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className="p-8 text-center">
+                    <p className="text-gray-500">No customers found</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+
+      case "categories":
+        return (
+          <div>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+              <h3 className="text-xl font-semibold text-gray-800 mb-4 md:mb-0">
+                Category Management
+              </h3>
+              <Button onClick={handleAddNewCategory} size="md">
+                Add New Category
+              </Button>
+            </div>
+
+            {submitSuccess && (
+              <FormSuccess
+                message={
+                  isAddingCategory
+                    ? "Category added successfully!"
+                    : selectedCategory
+                    ? "Category updated successfully!"
+                    : "Category deleted successfully!"
+                }
+              />
+            )}
+
+            {submitError && <FormError message={submitError} />}
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {/* Categories List */}
+              <div className="md:col-span-1 bg-white rounded-lg shadow-md overflow-hidden">
+                <div className="p-4 bg-gray-50 border-b border-gray-200">
+                  <h4 className="font-semibold">All Categories</h4>
+                </div>
+
+                <div className="divide-y divide-gray-200 max-h-96 overflow-y-auto">
+                  {categories.length > 0 ? (
+                    categories.map((category) => (
+                      <div
+                        key={category._id}
+                        className={`p-4 cursor-pointer hover:bg-gray-50 ${
+                          selectedCategory &&
+                          selectedCategory._id === category._id
+                            ? "bg-pink-50"
+                            : ""
+                        }`}
+                        onClick={() => handleSelectCategory(category)}
+                      >
+                        <div className="flex items-center">
+                          {category.image && (
+                            <div className="w-12 h-12 rounded-md overflow-hidden mr-3">
+                              <img
+                                src={category.image}
+                                alt={category.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) =>
+                                  (e.target.src =
+                                    "https://via.placeholder.com/150?text=Category")
+                                }
+                              />
+                            </div>
+                          )}
+                          <div>
+                            <h4 className="font-medium text-gray-800">
+                              {category.name}
+                            </h4>
+                            {category.slug && (
+                              <p className="text-sm text-gray-500">
+                                {category.slug}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-4 text-center text-gray-500">
+                      No categories found
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Category Edit Form */}
+              <div className="md:col-span-2">
+                {selectedCategory || isAddingCategory ? (
+                  <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                    <div className="p-4 bg-gray-50 border-b border-gray-200">
+                      <h4 className="font-semibold">
+                        {isAddingCategory
+                          ? "Add New Category"
+                          : "Edit Category"}
+                      </h4>
+                    </div>
+
+                    <div className="p-6">
+                      <form onSubmit={handleCategorySubmit}>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <TextInput
+                            label="Category Name"
+                            name="name"
+                            value={categoryFormData.name}
+                            onChange={handleCategoryNameChange}
+                            required
+                          />
+
+                          <TextInput
+                            label="Slug"
+                            name="slug"
+                            value={categoryFormData.slug}
+                            onChange={handleCategoryFormChange}
+                            placeholder="category-slug"
+                            helperText="Used in URLs, auto-generated from name"
+                          />
+                        </div>
+
+                        <TextInput
+                          label="Image URL"
+                          name="image"
+                          value={categoryFormData.image}
+                          onChange={handleCategoryFormChange}
+                          placeholder="/uploads/categories/example.jpg"
+                        />
+
+                        <TextArea
+                          label="Description"
+                          name="description"
+                          value={categoryFormData.description}
+                          onChange={handleCategoryFormChange}
+                          rows={3}
+                        />
+
+                        <div className="flex justify-between mt-6">
+                          {selectedCategory && !isAddingCategory && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={handleDeleteCategory}
+                              className="text-red-500 border-red-500 hover:bg-red-50"
+                              disabled={isSubmitting}
+                            >
+                              Delete Category
+                            </Button>
+                          )}
+                          <div className="ml-auto flex gap-3">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedCategory(null);
+                                setIsAddingCategory(false);
+                              }}
+                              disabled={isSubmitting}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              type="submit"
+                              variant="primary"
+                              disabled={isSubmitting}
+                            >
+                              {isSubmitting
+                                ? "Saving..."
+                                : isAddingCategory
+                                ? "Add Category"
+                                : "Save Changes"}
+                            </Button>
+                          </div>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-gray-50 rounded-lg p-8 text-center h-full flex flex-col items-center justify-center">
+                    <svg
+                      className="w-16 h-16 text-gray-400 mb-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 6h16M4 12h16M4 18h7"
+                      />
+                    </svg>
+                    <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                      No Category Selected
+                    </h3>
+                    <p className="text-gray-600 mb-4">
+                      Select a category from the list to edit its details or
+                      click "Add New Category"
+                    </p>
+                    <Button onClick={handleAddNewCategory} variant="primary">
+                      Add New Category
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         );
@@ -781,122 +1332,149 @@ const AdminDashboard = () => {
               Site Settings
             </h3>
 
-            <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
-              <div className="p-4 border-b border-gray-200 bg-gray-50">
-                <h4 className="font-semibold">General Settings</h4>
+            {submitSuccess && (
+              <FormSuccess message="Settings updated successfully!" />
+            )}
+
+            {submitError && <FormError message={submitError} />}
+
+            {isLoadingSettings ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-pink-500"></div>
               </div>
+            ) : (
+              <form onSubmit={handleSettingsSubmit}>
+                <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+                  <div className="p-4 border-b border-gray-200 bg-gray-50">
+                    <h4 className="font-semibold">General Settings</h4>
+                  </div>
 
-              <div className="p-6">
-                <div className="mb-4">
-                  <label className="block text-gray-700 font-medium mb-2">
-                    Store Name
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300"
-                    value="Jennylecious Cakes & Bakes"
-                  />
+                  <div className="p-6">
+                    <div className="mb-4">
+                      <label className="block text-gray-700 font-medium mb-2">
+                        Store Name
+                      </label>
+                      <input
+                        type="text"
+                        name="storeName"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300"
+                        value={settingsData.storeName}
+                        onChange={handleSettingsChange}
+                      />
+                    </div>
+
+                    <div className="mb-4">
+                      <label className="block text-gray-700 font-medium mb-2">
+                        Contact Email
+                      </label>
+                      <input
+                        type="email"
+                        name="contactEmail"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300"
+                        value={settingsData.contactEmail}
+                        onChange={handleSettingsChange}
+                      />
+                    </div>
+
+                    <div className="mb-4">
+                      <label className="block text-gray-700 font-medium mb-2">
+                        Phone Number
+                      </label>
+                      <input
+                        type="tel"
+                        name="phone"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300"
+                        value={settingsData.phone}
+                        onChange={handleSettingsChange}
+                      />
+                    </div>
+
+                    <div className="mb-4">
+                      <label className="block text-gray-700 font-medium mb-2">
+                        Store Address
+                      </label>
+                      <textarea
+                        name="address"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300"
+                        rows="3"
+                        value={settingsData.address}
+                        onChange={handleSettingsChange}
+                      ></textarea>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="mb-4">
-                  <label className="block text-gray-700 font-medium mb-2">
-                    Contact Email
-                  </label>
-                  <input
-                    type="email"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300"
-                    value="info@jennylecious.com"
-                  />
-                </div>
+                <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                  <div className="p-4 border-b border-gray-200 bg-gray-50">
+                    <h4 className="font-semibold">Payment Settings</h4>
+                  </div>
 
-                <div className="mb-4">
-                  <label className="block text-gray-700 font-medium mb-2">
-                    Phone Number
-                  </label>
-                  <input
-                    type="tel"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300"
-                    value="(123) 456-7890"
-                  />
-                </div>
+                  <div className="p-6">
+                    <div className="mb-4">
+                      <label className="block text-gray-700 font-medium mb-2">
+                        M-Pesa Consumer Key
+                      </label>
+                      <input
+                        type="text"
+                        name="payment.mpesaConsumerKey"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300"
+                        value={settingsData.payment.mpesaConsumerKey}
+                        onChange={handleSettingsChange}
+                      />
+                    </div>
 
-                <div className="mb-4">
-                  <label className="block text-gray-700 font-medium mb-2">
-                    Store Address
-                  </label>
-                  <textarea
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300"
-                    rows="3"
-                  >
-                    123 Baker Street, Sweet City, SC 12345
-                  </textarea>
-                </div>
+                    <div className="mb-4">
+                      <label className="block text-gray-700 font-medium mb-2">
+                        M-Pesa Consumer Secret
+                      </label>
+                      <input
+                        type="password"
+                        name="payment.mpesaConsumerSecret"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300"
+                        value={settingsData.payment.mpesaConsumerSecret}
+                        onChange={handleSettingsChange}
+                      />
+                    </div>
 
-                <div className="text-right">
-                  <Button type="button" variant="primary">
-                    Save Settings
-                  </Button>
-                </div>
-              </div>
-            </div>
+                    <div className="mb-4">
+                      <label className="block text-gray-700 font-medium mb-2">
+                        M-Pesa Passkey
+                      </label>
+                      <input
+                        type="password"
+                        name="payment.mpesaPasskey"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300"
+                        value={settingsData.payment.mpesaPasskey}
+                        onChange={handleSettingsChange}
+                      />
+                    </div>
 
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="p-4 border-b border-gray-200 bg-gray-50">
-                <h4 className="font-semibold">Payment Settings</h4>
-              </div>
+                    <div className="mb-4">
+                      <label className="block text-gray-700 font-medium mb-2">
+                        Business ShortCode
+                      </label>
+                      <input
+                        type="text"
+                        name="payment.businessShortCode"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300"
+                        value={settingsData.payment.businessShortCode}
+                        onChange={handleSettingsChange}
+                      />
+                    </div>
 
-              <div className="p-6">
-                <div className="mb-4">
-                  <label className="block text-gray-700 font-medium mb-2">
-                    M-Pesa Consumer Key
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300"
-                    value="••••••••••••••••"
-                  />
+                    <div className="text-right">
+                      <Button
+                        type="submit"
+                        variant="primary"
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? "Saving..." : "Save Settings"}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-
-                <div className="mb-4">
-                  <label className="block text-gray-700 font-medium mb-2">
-                    M-Pesa Consumer Secret
-                  </label>
-                  <input
-                    type="password"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300"
-                    value="••••••••••••••••"
-                  />
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-gray-700 font-medium mb-2">
-                    M-Pesa Passkey
-                  </label>
-                  <input
-                    type="password"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300"
-                    value="••••••••••••••••"
-                  />
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-gray-700 font-medium mb-2">
-                    Business ShortCode
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300"
-                    value="123456"
-                  />
-                </div>
-
-                <div className="text-right">
-                  <Button type="button" variant="primary">
-                    Save Payment Settings
-                  </Button>
-                </div>
-              </div>
-            </div>
+              </form>
+            )}
           </div>
         );
 
@@ -914,7 +1492,9 @@ const AdminDashboard = () => {
               Admin Dashboard
             </h1>
             <div className="flex items-center space-x-4">
-              <span className="text-gray-600">Welcome, Admin</span>
+              <span className="text-gray-600">
+                Welcome, {currentUser?.firstName}
+              </span>
               <Link to="/" className="text-pink-500 hover:text-pink-600">
                 View Site
               </Link>
@@ -944,7 +1524,9 @@ const AdminDashboard = () => {
                   <h3 className="text-lg font-semibold text-gray-700">
                     Total Orders
                   </h3>
-                  <p className="text-2xl font-bold text-gray-800">125</p>
+                  <p className="text-2xl font-bold text-gray-800">
+                    {orders.length}
+                  </p>
                 </div>
               </div>
             </div>
@@ -971,7 +1553,9 @@ const AdminDashboard = () => {
                   <h3 className="text-lg font-semibold text-gray-700">
                     Customers
                   </h3>
-                  <p className="text-2xl font-bold text-gray-800">48</p>
+                  <p className="text-2xl font-bold text-gray-800">
+                    {customers.length}
+                  </p>
                 </div>
               </div>
             </div>
@@ -998,7 +1582,12 @@ const AdminDashboard = () => {
                   <h3 className="text-lg font-semibold text-gray-700">
                     Revenue
                   </h3>
-                  <p className="text-2xl font-bold text-gray-800">$4,325.50</p>
+                  <p className="text-2xl font-bold text-gray-800">
+                    $
+                    {orders
+                      .reduce((total, order) => total + order.total, 0)
+                      .toFixed(2)}
+                  </p>
                 </div>
               </div>
             </div>
@@ -1047,6 +1636,16 @@ const AdminDashboard = () => {
                     onClick={() => setActiveTab("products")}
                   >
                     Product Management
+                  </button>
+                  <button
+                    className={`w-full text-left px-6 py-4 font-medium ${
+                      activeTab === "categories"
+                        ? "text-pink-500 bg-pink-50"
+                        : "text-gray-700 hover:bg-gray-50"
+                    }`}
+                    onClick={() => setActiveTab("categories")}
+                  >
+                    Category Management
                   </button>
                   <button
                     className={`w-full text-left px-6 py-4 font-medium ${

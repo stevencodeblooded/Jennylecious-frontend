@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   TextInput,
@@ -7,9 +7,12 @@ import {
   FormSuccess,
 } from "../../components/shared/FormElements";
 import Button from "../../components/shared/Button";
+import { useAuth } from "../../context/AuthContext";
 
 const Register = () => {
   const navigate = useNavigate();
+  const { register, isAuthenticated, isLoading } = useAuth();
+
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -17,14 +20,22 @@ const Register = () => {
     phone: "",
     password: "",
     confirmPassword: "",
+    address: "",
     agreeToTerms: false,
-    subscribeToNewsletter: false,
+    newsletter: false,
   });
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState("");
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      navigate("/account");
+    }
+  }, [isAuthenticated, isLoading, navigate]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -69,8 +80,8 @@ const Register = () => {
     // Password validation
     if (!formData.password) {
       newErrors.password = "Password is required";
-    } else if (formData.password.length < 8) {
-      newErrors.password = "Password must be at least 8 characters";
+    } else if (formData.password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters";
     }
 
     // Confirm password validation
@@ -89,26 +100,56 @@ const Register = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitError("");
 
     if (validateForm()) {
       setIsSubmitting(true);
 
-      // This would be replaced with an actual API call to register
-      setTimeout(() => {
-        console.log("Registration form submitted:", formData);
-        setIsSubmitting(false);
-        setSubmitSuccess(true);
+      try {
+        // Prepare registration data (excluding confirmPassword and agreeToTerms)
+        const userData = {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          phone: formData.phone,
+          password: formData.password,
+          address: formData.address,
+          newsletter: formData.newsletter,
+        };
 
-        // Simulate successful registration and redirect
-        setTimeout(() => {
-          navigate("/login");
-        }, 2000);
-      }, 1000);
+        // Call register function from AuthContext
+        const result = await register(userData);
+
+        if (result.success) {
+          setSubmitSuccess(true);
+
+          // Redirect after successful registration
+          setTimeout(() => {
+            navigate("/account");
+          }, 2000);
+        } else {
+          setSubmitError(result.error);
+        }
+      } catch (error) {
+        setSubmitError("An unexpected error occurred. Please try again.");
+        console.error("Registration error:", error);
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="bg-gray-50 py-16">
+        <div className="container mx-auto px-4 flex justify-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-pink-500"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -126,7 +167,7 @@ const Register = () => {
               </div>
 
               {submitSuccess && (
-                <FormSuccess message="Registration successful! You can now log in to your account." />
+                <FormSuccess message="Registration successful! Redirecting to your account dashboard..." />
               )}
 
               {submitError && <FormError message={submitError} />}
@@ -178,6 +219,14 @@ const Register = () => {
                   />
                 </div>
 
+                <TextInput
+                  label="Address"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  placeholder="Enter your delivery address"
+                />
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <TextInput
                     label="Password"
@@ -207,19 +256,19 @@ const Register = () => {
                     label={
                       <span>
                         I agree to the{" "}
-                        <a
-                          href="/terms"
+                        <Link
+                          to="/terms"
                           className="text-pink-500 hover:underline"
                         >
                           Terms & Conditions
-                        </a>{" "}
+                        </Link>{" "}
                         and{" "}
-                        <a
-                          href="/privacy"
+                        <Link
+                          to="/privacy"
                           className="text-pink-500 hover:underline"
                         >
                           Privacy Policy
-                        </a>
+                        </Link>
                       </span>
                     }
                     name="agreeToTerms"
@@ -232,8 +281,8 @@ const Register = () => {
                 <div className="mb-6">
                   <Checkbox
                     label="I would like to receive newsletters about special offers and new products"
-                    name="subscribeToNewsletter"
-                    checked={formData.subscribeToNewsletter}
+                    name="newsletter"
+                    checked={formData.newsletter}
                     onChange={handleChange}
                   />
                 </div>

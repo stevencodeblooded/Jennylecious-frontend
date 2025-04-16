@@ -1,46 +1,87 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Button from "../shared/Button";
+import { userService, orderService } from "../../utils/api";
 
 const CustomerDetailsModal = ({ customer, onClose }) => {
-  // Move useState to the top of the component, before any conditional returns
+  // State management
   const [activeTab, setActiveTab] = useState("info");
+  const [customerOrders, setCustomerOrders] = useState([]);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
+  const [customerNotes, setCustomerNotes] = useState("");
+  const [customerPreferences, setCustomerPreferences] = useState({
+    hasNutAllergy: false,
+    prefersGlutenFree: false,
+    prefersVegan: false,
+    isVip: false,
+  });
+  const [isSavingNotes, setIsSavingNotes] = useState(false);
 
-  // Early return if no customer (after useState)
-  if (!customer) return null;
+  // Early return if no customer
+  // Fetch customer orders when the orders tab is active
+  useEffect(() => {
+    if (customer && activeTab === "orders" && customer._id) {
+      fetchCustomerOrders();
+    }
+  }, [activeTab, customer]);
+
+  // Fetch customer notes and preferences when the notes tab is active
+  useEffect(() => {
+    if (customer && activeTab === "notes" && customer._id) {
+      setCustomerNotes(customer.notes || "");
+      setCustomerPreferences({
+        hasNutAllergy: customer.preferences?.hasNutAllergy || false,
+        prefersGlutenFree: customer.preferences?.prefersGlutenFree || false,
+        prefersVegan: customer.preferences?.prefersVegan || false,
+        isVip: customer.preferences?.isVip || false,
+      });
+    }
+  }, [activeTab, customer]);
+
+  // Fetch customer orders
+ const fetchCustomerOrders = async () => {
+   setIsLoadingOrders(true);
+   try {
+     // This assumes the backend route for getUserOrders works with the current user context
+     const response = await orderService.getUserOrders();
+     setCustomerOrders(response.data.data);
+   } catch (error) {
+     console.error("Error fetching customer orders:", error);
+   } finally {
+     setIsLoadingOrders(false);
+   }
+ };
+
+  // Handle saving customer notes and preferences
+  const handleSaveNotes = async () => {
+    setIsSavingNotes(true);
+    try {
+      // Assuming your API has an endpoint to update customer preferences
+      await userService.updateCustomerPreferences(customer._id, {
+        notes: customerNotes,
+        preferences: customerPreferences,
+      });
+      // Show success message or notification
+    } catch (error) {
+      console.error("Error saving customer notes:", error);
+      // Show error message
+    } finally {
+      setIsSavingNotes(false);
+    }
+  };
+
+  // Handle preference changes
+  const handlePreferenceChange = (key, value) => {
+    setCustomerPreferences((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
 
   // Format date
   const formatDate = (dateString) => {
     const options = { year: "numeric", month: "long", day: "numeric" };
     return new Date(dateString).toLocaleDateString("en-US", options);
   };
-
-  // Mock order history
-  const orderHistory = [
-    {
-      id: "ORD-1234",
-      date: "2023-03-15",
-      total: 49.99,
-      status: "Delivered",
-      items: [{ name: "Chocolate Cake", quantity: 1 }],
-    },
-    {
-      id: "ORD-5678",
-      date: "2023-02-28",
-      total: 74.98,
-      status: "Delivered",
-      items: [
-        { name: "Red Velvet Cupcakes", quantity: 2 },
-        { name: "French Macarons", quantity: 1 },
-      ],
-    },
-    {
-      id: "ORD-9012",
-      date: "2023-04-05",
-      total: 149.99,
-      status: "Processing",
-      items: [{ name: "Wedding Cake (Deposit)", quantity: 1 }],
-    },
-  ];
 
   // Get status color
   const getStatusColor = (status) => {
@@ -58,6 +99,9 @@ const CustomerDetailsModal = ({ customer, onClose }) => {
     }
   };
 
+  // You can still have conditional rendering for the return
+  if (!customer) return null;
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -70,7 +114,7 @@ const CustomerDetailsModal = ({ customer, onClose }) => {
         <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full">
           <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
             <h3 className="text-lg font-semibold text-gray-800">
-              Customer Profile: {customer.name}
+              Customer Profile: {customer.firstName} {customer.lastName}
             </h3>
             <button
               onClick={onClose}
@@ -143,7 +187,7 @@ const CustomerDetailsModal = ({ customer, onClose }) => {
                           Full Name:
                         </span>
                         <p className="font-medium text-gray-800">
-                          {customer.name}
+                          {customer.firstName} {customer.lastName}
                         </p>
                       </div>
                       <div className="mb-3">
@@ -155,7 +199,7 @@ const CustomerDetailsModal = ({ customer, onClose }) => {
                       <div className="mb-3">
                         <span className="text-gray-500 text-sm">Phone:</span>
                         <p className="font-medium text-gray-800">
-                          {customer.phone}
+                          {customer.phone || "Not provided"}
                         </p>
                       </div>
                       <div>
@@ -163,7 +207,9 @@ const CustomerDetailsModal = ({ customer, onClose }) => {
                           Customer Since:
                         </span>
                         <p className="font-medium text-gray-800">
-                          {customer.joinDate}
+                          {customer.createdAt
+                            ? formatDate(customer.createdAt)
+                            : "N/A"}
                         </p>
                       </div>
                     </div>
@@ -175,7 +221,7 @@ const CustomerDetailsModal = ({ customer, onClose }) => {
                     </h4>
                     <div className="bg-gray-50 p-4 rounded-md">
                       <p className="text-gray-800 whitespace-pre-line">
-                        {customer.address}
+                        {customer.address || "No address provided"}
                       </p>
                     </div>
 
@@ -189,7 +235,9 @@ const CustomerDetailsModal = ({ customer, onClose }) => {
                             Total Orders:
                           </span>
                           <p className="font-medium text-gray-800">
-                            {customer.orders || orderHistory.length}
+                            {customer.orderCount ||
+                              customer.orders?.length ||
+                              0}
                           </p>
                         </div>
                         <div>
@@ -198,10 +246,9 @@ const CustomerDetailsModal = ({ customer, onClose }) => {
                           </span>
                           <p className="font-medium text-gray-800">
                             $
-                            {customer.totalSpent ||
-                              orderHistory
-                                .reduce((sum, order) => sum + order.total, 0)
-                                .toFixed(2)}
+                            {customer.totalSpent
+                              ? customer.totalSpent.toFixed(2)
+                              : "0.00"}
                           </p>
                         </div>
                         <div>
@@ -218,7 +265,15 @@ const CustomerDetailsModal = ({ customer, onClose }) => {
                           <span className="text-gray-500 text-sm">
                             Account Status:
                           </span>
-                          <p className="font-medium text-green-600">Active</p>
+                          <p
+                            className={`font-medium ${
+                              customer.isActive
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }`}
+                          >
+                            {customer.isActive ? "Active" : "Inactive"}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -233,7 +288,9 @@ const CustomerDetailsModal = ({ customer, onClose }) => {
                     variant="outline"
                     className="text-red-500 border-red-500 hover:bg-red-50"
                   >
-                    Deactivate Account
+                    {customer.isActive
+                      ? "Deactivate Account"
+                      : "Activate Account"}
                   </Button>
                 </div>
               </div>
@@ -245,7 +302,11 @@ const CustomerDetailsModal = ({ customer, onClose }) => {
                   Order History
                 </h4>
 
-                {orderHistory.length > 0 ? (
+                {isLoadingOrders ? (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-pink-500"></div>
+                  </div>
+                ) : customerOrders.length > 0 ? (
                   <div className="bg-gray-50 rounded-md overflow-hidden">
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead>
@@ -268,21 +329,24 @@ const CustomerDetailsModal = ({ customer, onClose }) => {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {orderHistory.map((order) => (
-                          <tr key={order.id} className="hover:bg-gray-50">
+                        {customerOrders.map((order) => (
+                          <tr key={order._id} className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-pink-600">
-                              <a href="#test" className="hover:underline">
-                                {order.id}
+                              <a
+                                href={`#/orders/${order._id}`}
+                                className="hover:underline"
+                              >
+                                {order.orderNumber}
                               </a>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {formatDate(order.date)}
+                              {formatDate(order.orderDate)}
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-500">
                               <ul className="list-disc list-inside">
                                 {order.items.map((item, index) => (
                                   <li key={index}>
-                                    {item.name} × {item.quantity}
+                                    {item.product.name} × {item.quantity}
                                   </li>
                                 ))}
                               </ul>
@@ -341,7 +405,8 @@ const CustomerDetailsModal = ({ customer, onClose }) => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300"
                     rows="6"
                     placeholder="Add private notes about this customer..."
-                    defaultValue={customer.notes || ""}
+                    value={customerNotes}
+                    onChange={(e) => setCustomerNotes(e.target.value)}
                   ></textarea>
                 </div>
 
@@ -355,7 +420,13 @@ const CustomerDetailsModal = ({ customer, onClose }) => {
                         type="checkbox"
                         id="pref-allergies"
                         className="h-4 w-4 text-pink-500 focus:ring-pink-300 border-gray-300 rounded"
-                        defaultChecked={true}
+                        checked={customerPreferences.hasNutAllergy}
+                        onChange={(e) =>
+                          handlePreferenceChange(
+                            "hasNutAllergy",
+                            e.target.checked
+                          )
+                        }
                       />
                       <label
                         htmlFor="pref-allergies"
@@ -369,7 +440,13 @@ const CustomerDetailsModal = ({ customer, onClose }) => {
                         type="checkbox"
                         id="pref-gluten"
                         className="h-4 w-4 text-pink-500 focus:ring-pink-300 border-gray-300 rounded"
-                        defaultChecked={false}
+                        checked={customerPreferences.prefersGlutenFree}
+                        onChange={(e) =>
+                          handlePreferenceChange(
+                            "prefersGlutenFree",
+                            e.target.checked
+                          )
+                        }
                       />
                       <label
                         htmlFor="pref-gluten"
@@ -383,7 +460,13 @@ const CustomerDetailsModal = ({ customer, onClose }) => {
                         type="checkbox"
                         id="pref-vegan"
                         className="h-4 w-4 text-pink-500 focus:ring-pink-300 border-gray-300 rounded"
-                        defaultChecked={false}
+                        checked={customerPreferences.prefersVegan}
+                        onChange={(e) =>
+                          handlePreferenceChange(
+                            "prefersVegan",
+                            e.target.checked
+                          )
+                        }
                       />
                       <label
                         htmlFor="pref-vegan"
@@ -397,7 +480,10 @@ const CustomerDetailsModal = ({ customer, onClose }) => {
                         type="checkbox"
                         id="pref-vip"
                         className="h-4 w-4 text-pink-500 focus:ring-pink-300 border-gray-300 rounded"
-                        defaultChecked={true}
+                        checked={customerPreferences.isVip}
+                        onChange={(e) =>
+                          handlePreferenceChange("isVip", e.target.checked)
+                        }
                       />
                       <label htmlFor="pref-vip" className="ml-2 block text-sm">
                         VIP customer
@@ -407,7 +493,9 @@ const CustomerDetailsModal = ({ customer, onClose }) => {
                 </div>
 
                 <div className="flex justify-end">
-                  <Button>Save Notes</Button>
+                  <Button onClick={handleSaveNotes} disabled={isSavingNotes}>
+                    {isSavingNotes ? "Saving..." : "Save Notes"}
+                  </Button>
                 </div>
               </div>
             )}

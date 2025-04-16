@@ -1,16 +1,47 @@
 import React, { useState, useEffect } from "react";
 import ProductCard from "./ProductCard";
-import products, { categories } from "../../data/products";
+import { productService } from "../../utils/api";
 
 const ProductList = () => {
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [filteredProducts, setFilteredProducts] = useState(products);
+  const [filteredProducts, setFilteredProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [dietaryFilter, setDietaryFilter] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch products and categories from API
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        // Fetch categories
+        const categoriesResponse = await productService.getCategories();
+        setCategories(categoriesResponse.data.data);
+
+        // Fetch products
+        const productsResponse = await productService.getProducts();
+        setProducts(productsResponse.data.data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setError("Failed to load products. Please try again later.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   // Filter products based on category, search term, and dietary filters
   useEffect(() => {
-    let result = products;
+    if (products.length === 0) return;
+
+    let result = [...products];
 
     // Category filter
     if (selectedCategory !== "all") {
@@ -32,22 +63,21 @@ const ProductList = () => {
     // Dietary filters
     if (dietaryFilter.length > 0) {
       result = result.filter((product) => {
+        // Make sure allergens is an array
+        const allergens = product.allergens || [];
+
         if (
           dietaryFilter.includes("gluten-free") &&
-          product.allergens.includes("Gluten")
+          allergens.includes("Gluten")
         ) {
           return false;
         }
-        if (
-          dietaryFilter.includes("nut-free") &&
-          product.allergens.includes("Nuts")
-        ) {
+        if (dietaryFilter.includes("nut-free") && allergens.includes("Nuts")) {
           return false;
         }
         if (
           dietaryFilter.includes("vegan") &&
-          (product.allergens.includes("Eggs") ||
-            product.allergens.includes("Dairy"))
+          (allergens.includes("Eggs") || allergens.includes("Dairy"))
         ) {
           return false;
         }
@@ -56,7 +86,7 @@ const ProductList = () => {
     }
 
     setFilteredProducts(result);
-  }, [selectedCategory, searchTerm, dietaryFilter]);
+  }, [products, selectedCategory, searchTerm, dietaryFilter]);
 
   // Handle dietary filter changes
   const handleDietaryFilterChange = (filter) => {
@@ -66,6 +96,43 @@ const ProductList = () => {
       setDietaryFilter([...dietaryFilter, filter]);
     }
   };
+
+  // Reset all filters
+  const resetFilters = () => {
+    setSelectedCategory("all");
+    setSearchTerm("");
+    setDietaryFilter([]);
+  };
+
+  // Get category name by id
+  const getCategoryName = (categoryId) => {
+    const category = categories.find((cat) => cat.id === categoryId);
+    return category ? category.name : "All Products";
+  };
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-16 flex justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-pink-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-16">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-center">
+          <p>{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 bg-red-100 hover:bg-red-200 text-red-800 font-bold py-2 px-4 rounded"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -117,7 +184,10 @@ const ProductList = () => {
                 </button>
               </div>
               {categories.map((category) => (
-                <div key={category.id} className="flex items-center">
+                <div
+                  key={category._id || category.id}
+                  className="flex items-center"
+                >
                   <button
                     className={`text-left w-full py-2 px-2 rounded-md ${
                       selectedCategory === category.id
@@ -184,7 +254,7 @@ const ProductList = () => {
             <h2 className="text-2xl font-semibold text-gray-800 mb-2 sm:mb-0">
               {selectedCategory === "all"
                 ? "All Products"
-                : categories.find((cat) => cat.id === selectedCategory)?.name}
+                : getCategoryName(selectedCategory)}
             </h2>
             <p className="text-gray-600">
               Showing {filteredProducts.length} product
@@ -195,7 +265,7 @@ const ProductList = () => {
           {filteredProducts.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
+                <ProductCard key={product._id} product={product} />
               ))}
             </div>
           ) : (
@@ -221,11 +291,7 @@ const ProductList = () => {
                 Try adjusting your filters or search criteria.
               </p>
               <button
-                onClick={() => {
-                  setSelectedCategory("all");
-                  setSearchTerm("");
-                  setDietaryFilter([]);
-                }}
+                onClick={resetFilters}
                 className="text-pink-500 font-medium hover:text-pink-600 transition-colors"
               >
                 Reset all filters

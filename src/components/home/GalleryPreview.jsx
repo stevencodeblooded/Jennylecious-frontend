@@ -6,37 +6,37 @@ const GalleryPreview = () => {
   const previewImages = [
     {
       id: 1,
-      src: "/assets/images/gallery/cake1.jpg",
+      src: "/pictures/gallery1.jpg",
       alt: "Birthday cake with colorful frosting",
       category: "Birthday",
     },
     {
       id: 2,
-      src: "/assets/images/gallery/cake2.jpg",
+      src: "/pictures/gallery5.jpg",
       alt: "Elegant wedding cake with flowers",
       category: "Wedding",
     },
     {
       id: 3,
-      src: "/assets/images/gallery/cake3.jpg",
+      src: "/pictures/gallery3.jpg",
       alt: "Chocolate cupcakes with buttercream",
       category: "Cupcakes",
     },
     {
       id: 4,
-      src: "/assets/images/gallery/cake4.jpg",
+      src: "/pictures/gallery4.jpg",
       alt: "Custom themed cake for children",
       category: "Custom",
     },
     {
       id: 5,
-      src: "/assets/images/gallery/cake5.jpg",
+      src: "/pictures/gallery2.jpg",
       alt: "French pastries assortment",
       category: "Pastries",
     },
     {
       id: 6,
-      src: "/assets/images/gallery/cake6.jpg",
+      src: "/pictures/gallery6.jpg",
       alt: "Anniversary celebration cake",
       category: "Anniversary",
     },

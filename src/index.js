@@ -2,6 +2,10 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
+import axios from "axios";
+
+// Configure axios defaults
+axios.defaults.withCredentials = true; // Important for cookies in cross-domain requests
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(

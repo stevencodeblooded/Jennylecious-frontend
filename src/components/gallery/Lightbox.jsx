@@ -18,8 +18,15 @@ const Lightbox = ({ image, onClose, onPrev, onNext }) => {
   }, [onClose, onPrev, onNext]);
 
   return (
-    <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
-      <div className="relative max-w-4xl w-full">
+    <div
+      className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 overflow-auto"
+      onClick={onClose}
+    >
+      <div
+        className="relative max-w-4xl w-full my-8"
+        // Prevent closing when clicking on the content
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Close button */}
         <button
           onClick={onClose}
@@ -42,18 +49,18 @@ const Lightbox = ({ image, onClose, onPrev, onNext }) => {
           </svg>
         </button>
 
-        {/* Main image */}
-        <div className="relative">
+        {/* Main image container */}
+        <div className="relative bg-black rounded-lg overflow-hidden shadow-2xl">
           <img
             src={image.src}
             alt={image.alt}
-            className="w-full h-auto rounded-lg shadow-2xl"
+            className="w-full h-auto max-h-[80vh] object-contain"
           />
 
           {/* Navigation buttons */}
           <button
             onClick={onPrev}
-            className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
+            className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors m-2"
             aria-label="Previous image"
           >
             <svg
@@ -74,7 +81,7 @@ const Lightbox = ({ image, onClose, onPrev, onNext }) => {
 
           <button
             onClick={onNext}
-            className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
+            className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors m-2"
             aria-label="Next image"
           >
             <svg

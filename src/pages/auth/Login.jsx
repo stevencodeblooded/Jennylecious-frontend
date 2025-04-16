@@ -1,14 +1,18 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   TextInput,
   FormError,
   FormSuccess,
 } from "../../components/shared/FormElements";
 import Button from "../../components/shared/Button";
+import { useAuth } from "../../context/AuthContext";
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login, isAuthenticated, isLoading } = useAuth();
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -19,6 +23,13 @@ const Login = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState("");
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      navigate("/account");
+    }
+  }, [isAuthenticated, isLoading, navigate]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -55,26 +66,52 @@ const Login = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitError("");
 
     if (validateForm()) {
       setIsSubmitting(true);
 
-      // This would be replaced with an actual API call to login
-      setTimeout(() => {
-        console.log("Login form submitted:", formData);
-        setIsSubmitting(false);
-        setSubmitSuccess(true);
+      try {
+        // Use the login function from AuthContext
+        const result = await login(
+          formData.email,
+          formData.password,
+          formData.rememberMe
+        );
 
-        // Simulate successful login and redirect
-        setTimeout(() => {
-          navigate("/account");
-        }, 1500);
-      }, 1000);
+        if (result.success) {
+          setSubmitSuccess(true);
+
+          // Get the redirect path from location state or default to account page
+          const from = location.state?.from?.pathname || "/account";
+
+          // Redirect after successful login
+          setTimeout(() => {
+            navigate(from);
+          }, 1500);
+        } else {
+          setSubmitError(result.error);
+        }
+      } catch (error) {
+        setSubmitError("An unexpected error occurred. Please try again.");
+        console.error("Login error:", error);
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="bg-gray-50 py-16">
+        <div className="container mx-auto px-4 flex justify-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-pink-500"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>

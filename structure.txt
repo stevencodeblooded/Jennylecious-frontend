@@ -50,7 +50,7 @@ jennylecious-cakes-bakes/
 │   │   │   ├── Button.jsx
 │   │   │   ├── Newsletter.jsx
 │   │   │   ├── Card.jsx
-│   │   │   └── FormElements.jsx
+│   │   │   └── 
 │   │   └── auth/ (for later)
 │   │       ├── Login.jsx
 │   │       ├── Register.jsx

@@ -1,5 +1,6 @@
 import React from "react";
 import Button from "../shared/Button";
+import cakes from '../../assets/images/products/cake1.png'
 
 const Hero = () => {
   const handleExploreMenu = () => {
@@ -16,7 +17,9 @@ const Hero = () => {
       <div className="absolute inset-0 opacity-20 z-0">
         <div
           className="absolute inset-0 bg-repeat"
-          style={{ backgroundImage: "url('/assets/images/pattern.png')" }}
+          style={{
+            backgroundImage: "url('cake-bg-1.jpg')",
+          }}
         ></div>
       </div>
 
@@ -46,7 +49,7 @@ const Hero = () => {
           <div className="lg:w-1/2 relative z-30">
             <div className="relative rounded-lg overflow-hidden shadow-2xl">
               <img
-                src="/assets/images/hero-cake.jpg"
+                src={cakes}
                 alt="Beautifully decorated cake"
                 className="w-full h-auto"
               />

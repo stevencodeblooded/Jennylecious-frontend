@@ -14,7 +14,7 @@ const GalleryGrid = () => {
     const mockGalleryItems = [
       {
         id: 1,
-        src: "/assets/images/gallery/cake1.jpg",
+        src: "pictures/pic-gallery-1.jpg",
         alt: "Pink Birthday Cake with Sprinkles",
         category: "birthday",
         description:
@@ -22,7 +22,7 @@ const GalleryGrid = () => {
       },
       {
         id: 2,
-        src: "/assets/images/gallery/cake2.jpg",
+        src: "pictures/pic-gallery-2.jpg",
         alt: "Elegant Wedding Cake",
         category: "wedding",
         description:
@@ -30,7 +30,7 @@ const GalleryGrid = () => {
       },
       {
         id: 3,
-        src: "/assets/images/gallery/cake3.jpg",
+        src: "pictures/pic-gallery-3.jpg",
         alt: "Chocolate Cupcakes",
         category: "cupcakes",
         description:
@@ -38,7 +38,7 @@ const GalleryGrid = () => {
       },
       {
         id: 4,
-        src: "/assets/images/gallery/cake4.jpg",
+        src: "pictures/pic-gallery-5.jpg",
         alt: "Baby Shower Cake",
         category: "special",
         description:
@@ -46,7 +46,7 @@ const GalleryGrid = () => {
       },
       {
         id: 5,
-        src: "/assets/images/gallery/cake5.jpg",
+        src: "pictures/pic-gallery-6.jpg",
         alt: "Halloween Themed Cupcakes",
         category: "cupcakes",
         description:
@@ -54,7 +54,7 @@ const GalleryGrid = () => {
       },
       {
         id: 6,
-        src: "/assets/images/gallery/cake6.jpg",
+        src: "pictures/pic-gallery-7.jpg",
         alt: "Christmas Yule Log",
         category: "holiday",
         description:
@@ -62,7 +62,7 @@ const GalleryGrid = () => {
       },
       {
         id: 7,
-        src: "/assets/images/gallery/cake7.jpg",
+        src: "pictures/pic-gallery-8.jpg",
         alt: "Anniversary Cake",
         category: "anniversary",
         description:
@@ -70,7 +70,7 @@ const GalleryGrid = () => {
       },
       {
         id: 8,
-        src: "/assets/images/gallery/cake8.jpg",
+        src: "pictures/pic-gallery-9.jpg",
         alt: "Easter Themed Cookies",
         category: "cookies",
         description:
@@ -78,7 +78,7 @@ const GalleryGrid = () => {
       },
       {
         id: 9,
-        src: "/assets/images/gallery/cake9.jpg",
+        src: "pictures/pic-gallery-9.jpg",
         alt: "Rainbow Birthday Cake",
         category: "birthday",
         description:
@@ -86,7 +86,7 @@ const GalleryGrid = () => {
       },
       {
         id: 10,
-        src: "/assets/images/gallery/cake10.jpg",
+        src: "pictures/pic-gallery-4.jpg",
         alt: "Graduation Cake",
         category: "special",
         description:
@@ -94,7 +94,7 @@ const GalleryGrid = () => {
       },
       {
         id: 11,
-        src: "/assets/images/gallery/cake11.jpg",
+        src: "pictures/pic-gallery-10.jpg",
         alt: "Valentine's Day Cupcakes",
         category: "holiday",
         description:
@@ -102,7 +102,7 @@ const GalleryGrid = () => {
       },
       {
         id: 12,
-        src: "/assets/images/gallery/cake12.jpg",
+        src: "pictures/pic-gallery-1.jpg",
         alt: "Wedding Cupcake Tower",
         category: "wedding",
         description:
@@ -110,7 +110,7 @@ const GalleryGrid = () => {
       },
       {
         id: 13,
-        src: "/assets/images/gallery/cake13.jpg",
+        src: "pictures/pic-gallery-2.jpg",
         alt: "Character Birthday Cake",
         category: "birthday",
         description:
@@ -118,7 +118,7 @@ const GalleryGrid = () => {
       },
       {
         id: 14,
-        src: "/assets/images/gallery/cake14.jpg",
+        src: "pictures/pic-gallery-3.jpg",
         alt: "French Macarons",
         category: "cookies",
         description:
@@ -126,7 +126,7 @@ const GalleryGrid = () => {
       },
       {
         id: 15,
-        src: "/assets/images/gallery/cake15.jpg",
+        src: "pictures/pic-gallery-4.jpg",
         alt: "Thanksgiving Pie",
         category: "holiday",
         description:
@@ -192,23 +192,29 @@ const GalleryGrid = () => {
       />
 
       {/* Gallery grid */}
+      {/* Gallery grid */}
       {filteredItems.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 lg:gap-8">
           {filteredItems.map((item) => (
             <div
               key={item.id}
-              className="cursor-pointer overflow-hidden rounded-lg shadow-md hover:shadow-lg transition-shadow"
+              className="cursor-pointer group overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-all duration-300"
               onClick={() => openLightbox(item)}
             >
-              <div className="relative aspect-w-1 aspect-h-1 bg-gray-100">
+              <div
+                className="relative w-full overflow-hidden"
+                style={{ paddingBottom: "125%" }}
+              >
                 <img
                   src={item.src}
                   alt={item.alt}
-                  className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                  className="absolute inset-0 w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
                   loading="lazy"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
-                  <p className="text-white text-sm font-medium">{item.alt}</p>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+                  <p className="text-white text-sm font-medium line-clamp-2">
+                    {item.alt}
+                  </p>
                 </div>
               </div>
             </div>

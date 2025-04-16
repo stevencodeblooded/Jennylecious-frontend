@@ -1,5 +1,7 @@
 import React from "react";
 import Button from "../shared/Button";
+import cake from '../../assets/images/products/cake3.jpg'
+import jenny from '../../assets/images/products/Jenny.jpg'
 
 const AboutPreview = () => {
   return (
@@ -12,7 +14,7 @@ const AboutPreview = () => {
               {/* Main image */}
               <div className="rounded-lg overflow-hidden shadow-xl">
                 <img
-                  src="/assets/images/baker-jenny.jpg"
+                  src={jenny}
                   alt="Jenny, the master baker"
                   className="w-full h-auto"
                 />
@@ -21,7 +23,7 @@ const AboutPreview = () => {
               {/* Decorative smaller image */}
               <div className="absolute -bottom-6 -right-6 w-48 h-48 rounded-lg overflow-hidden shadow-lg border-4 border-white">
                 <img
-                  src="/assets/images/bakery-interior.jpg"
+                  src={cake}
                   alt="Inside our bakery"
                   className="w-full h-full object-cover"
                 />

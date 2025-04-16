@@ -1,44 +1,59 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Button from "../shared/Button";
-import products from "../../data/products";
+import { productService } from "../../utils/api";
 
 const ProductDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedOptions, setSelectedOptions] = useState({});
 
   // Similar products for recommendations
   const [similarProducts, setSimilarProducts] = useState([]);
 
   useEffect(() => {
-    const productId = parseInt(id);
-    const foundProduct = products.find((p) => p.id === productId);
+    const fetchProductData = async () => {
+      try {
+        // Fetch the product details
+        const response = await productService.getProductById(id);
+        const foundProduct = response.data.data;
 
-    if (foundProduct) {
-      setProduct(foundProduct);
+        if (foundProduct) {
+          setProduct(foundProduct);
 
-      // Initialize selected options with defaults
-      const initialOptions = {};
-      if (foundProduct.options) {
-        foundProduct.options.forEach((option) => {
-          initialOptions[option.name] = option.choices[0];
-        });
+          // Initialize selected options with defaults
+          const initialOptions = {};
+          if (foundProduct.options) {
+            foundProduct.options.forEach((option) => {
+              initialOptions[option.name] = option.choices[0];
+            });
+          }
+          setSelectedOptions(initialOptions);
+
+          // Fetch products from the same category for recommendations
+          if (foundProduct.category) {
+            const similarResponse = await productService.getProductsByCategory(
+              foundProduct.category
+            );
+            // Filter out the current product and limit to 3
+            const similar = similarResponse.data.data
+              .filter((p) => p._id !== foundProduct._id)
+              .slice(0, 3);
+            setSimilarProducts(similar);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching product:", err);
+        setError("Failed to load product details. Please try again later.");
+      } finally {
+        setLoading(false);
       }
-      setSelectedOptions(initialOptions);
+    };
 
-      // Find similar products (same category, excluding current)
-      const similar = products
-        .filter(
-          (p) => p.category === foundProduct.category && p.id !== productId
-        )
-        .slice(0, 3);
-      setSimilarProducts(similar);
-    }
-
-    setLoading(false);
+    fetchProductData();
   }, [id]);
 
   const handleOptionChange = (optionName, value) => {
@@ -55,6 +70,20 @@ const ProductDetails = () => {
           <div className="bg-gray-200 h-6 w-40 mb-4 rounded"></div>
           <div className="bg-gray-200 h-80 w-full max-w-xl rounded"></div>
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-12 text-center">
+        <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+          Error Loading Product
+        </h2>
+        <p className="text-gray-600 mb-6">{error}</p>
+        <Button to="/products" variant="primary">
+          Browse All Products
+        </Button>
       </div>
     );
   }
@@ -117,7 +146,7 @@ const ProductDetails = () => {
             {product.name}
           </h1>
           <p className="text-2xl font-semibold text-pink-500 mb-4">
-            ${product.price.toFixed(2)}
+            ${parseFloat(product.price).toFixed(2)}
           </p>
 
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -208,7 +237,7 @@ const ProductDetails = () => {
             {/* Order buttons */}
             <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
               <Button
-                to={`/order?product=${product.id}`}
+                to={`/order?product=${product._id}`}
                 size="lg"
                 fullWidth={true}
               >
@@ -236,7 +265,7 @@ const ProductDetails = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {similarProducts.map((similar) => (
               <div
-                key={similar.id}
+                key={similar._id}
                 className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
               >
                 <div className="relative pt-[56.25%]">
@@ -251,10 +280,10 @@ const ProductDetails = () => {
                     {similar.name}
                   </h3>
                   <p className="text-pink-500 font-medium mb-3">
-                    ${similar.price.toFixed(2)}
+                    ${parseFloat(similar.price).toFixed(2)}
                   </p>
                   <Button
-                    to={`/products/${similar.id}`}
+                    to={`/products/${similar._id}`}
                     variant="secondary"
                     fullWidth={true}
                   >
