@@ -1,0 +1,68 @@
+const testimonials = [
+  {
+    id: 1,
+    name: "Sarah Johnson",
+    location: "Local Customer",
+    image: "/assets/images/testimonials/sarah.jpg",
+    rating: 5,
+    text: "Jenny's cakes are simply amazing! She made my daughter's birthday cake and it was not only beautiful but delicious too. Everyone at the party wanted to know where we got it.",
+  },
+  {
+    id: 2,
+    name: "Michael Thompson",
+    location: "Wedding Client",
+    image: "/assets/images/testimonials/michael.jpg",
+    rating: 5,
+    text: "We hired Jennylecious for our wedding cake and it exceeded all our expectations. The design was exactly what we wanted and the taste was incredible. Highly recommend!",
+  },
+  {
+    id: 3,
+    name: "Emily Rodriguez",
+    location: "Event Planner",
+    image: "/assets/images/testimonials/emily.jpg",
+    rating: 5,
+    text: "As an event planner, I've worked with many bakers, but Jenny is my go-to for all clients now. Her attention to detail and reliability make her a dream to work with.",
+  },
+  {
+    id: 4,
+    name: "David Wilson",
+    location: "Regular Customer",
+    image: "/assets/images/testimonials/david.jpg",
+    rating: 4,
+    text: "I've ordered multiple times from Jennylecious, and each time has been a delight. The red velvet cupcakes are to die for!",
+  },
+  {
+    id: 5,
+    name: "Sophia Chen",
+    location: "Corporate Client",
+    image: "/assets/images/testimonials/sophia.jpg",
+    rating: 5,
+    text: "We order regularly from Jennylecious for our office events. The quality is consistent, delivery is always on time, and the treats never fail to impress our team.",
+  },
+  {
+    id: 6,
+    name: "James Anderson",
+    location: "Birthday Celebration",
+    image: "/assets/images/testimonials/james.jpg",
+    rating: 5,
+    text: "Jenny made a custom cake for my 40th birthday that looked like my favorite guitar. Not only was it a work of art, but it tasted fantastic too. A true talent!",
+  },
+  {
+    id: 7,
+    name: "Olivia Martinez",
+    location: "Anniversary Celebration",
+    image: "/assets/images/testimonials/olivia.jpg",
+    rating: 5,
+    text: "The anniversary cake Jenny made for us brought tears to my eyes. It was a perfect recreation of our wedding cake from 25 years ago. Such a special touch for our celebration!",
+  },
+  {
+    id: 8,
+    name: "Robert Kim",
+    location: "Local Business Owner",
+    image: "/assets/images/testimonials/robert.jpg",
+    rating: 5,
+    text: "We partnered with Jennylecious to provide desserts for our café. Our customers rave about the quality, and it's helped boost our business. Couldn't be happier with this partnership!",
+  },
+];
+
+export default testimonials;

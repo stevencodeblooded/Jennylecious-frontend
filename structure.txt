@@ -1,0 +1,88 @@
+jennylecious-cakes-bakes/
+├── public/
+│   ├── index.html
+│   ├── favicon.ico
+│   └── assets/
+│       └── images/
+├── src/
+│   ├── components/
+│   │   ├── layout/
+│   │   │   ├── Header.jsx
+│   │   │   ├── Footer.jsx
+│   │   │   └── MobileMenu.jsx
+│   │   ├── home/
+│   │   │   ├── Hero.jsx
+│   │   │   ├── FeaturedProducts.jsx
+│   │   │   ├── AboutPreview.jsx
+│   │   │   ├── Testimonials.jsx
+│   │   │   ├── ServicesOverview.jsx
+│   │   │   └── GalleryPreview.jsx
+│   │   ├── about/
+│   │   │   ├── StorySection.jsx
+│   │   │   ├── Values.jsx
+│   │   │   ├── BakerProfiles.jsx
+│   │   │   └── WorkspaceGallery.jsx
+│   │   ├── products/
+│   │   │   ├── ProductList.jsx
+│   │   │   ├── ProductCard.jsx
+│   │   │   ├── ProductDetails.jsx
+│   │   │   └── ProductCategories.jsx
+│   │   ├── gallery/
+│   │   │   ├── GalleryGrid.jsx
+│   │   │   ├── GalleryFilter.jsx
+│   │   │   └── Lightbox.jsx
+│   │   ├── order/
+│   │   │   ├── OrderForm.jsx
+│   │   │   ├── ProductSelection.jsx
+│   │   │   ├── DeliveryOptions.jsx
+│   │   │   └── OrderCalendar.jsx
+│   │   ├── contact/
+│   │   │   ├── ContactForm.jsx
+│   │   │   ├── ContactInfo.jsx
+│   │   │   └── Map.jsx
+│   │   ├── blog/ (Optional)
+│   │   │   ├── BlogList.jsx
+│   │   │   ├── BlogPost.jsx
+│   │   │   └── BlogSidebar.jsx
+│   │   ├── faq/
+│   │   │   └── FAQAccordion.jsx
+│   │   ├── shared/
+│   │   │   ├── Button.jsx
+│   │   │   ├── Newsletter.jsx
+│   │   │   ├── Card.jsx
+│   │   │   └── FormElements.jsx
+│   │   └── auth/ (for later)
+│   │       ├── Login.jsx
+│   │       ├── Register.jsx
+│   │       └── AccountDashboard.jsx
+│   ├── pages/
+│   │   ├── Home.jsx
+│   │   ├── About.jsx
+│   │   ├── Products.jsx
+│   │   ├── Gallery.jsx
+│   │   ├── Order.jsx
+│   │   ├── Contact.jsx
+│   │   ├── Blog.jsx (Optional)
+│   │   └── FAQ.jsx
+│   ├── context/
+│   │   ├── CartContext.jsx
+│   │   └── AuthContext.jsx (for later)
+│   ├── utils/
+│   │   ├── api.js (for API calls later)
+│   │   ├── helpers.js
+│   │   └── validation.js
+│   ├── hooks/
+│   │   ├── useForm.js
+│   │   └── useCart.js
+│   ├── data/ (temporary mockup data)
+│   │   ├── products.js
+│   │   ├── testimonials.js
+│   │   └── faq.js
+│   ├── styles/
+│   │   └── tailwind.css
+│   ├── App.jsx
+│   ├── index.js
+│   └── routes.js
+├── package.json
+├── tailwind.config.js
+└── README.md
