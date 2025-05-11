@@ -72,7 +72,7 @@ const Newsletter = ({ className = "" }) => {
           )}
 
           <p className="text-sm text-gray-500 mt-4">
-            We respect your privacy. Unsubscribe at any time.
+            We respect your privacy. <button className="hover:text-red-400 transition-all hover:font-semibold">Unsubscribe</button> at any time.
           </p>
         </div>
       </div>

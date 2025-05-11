@@ -47,7 +47,7 @@ const ProductCard = ({ product }) => {
 
         <div className="flex items-center justify-between mt-2">
           <span className="text-lg font-bold text-pink-500">
-            ${price.toFixed(2)}
+            Kes {price.toFixed(2)}
           </span>
           <div className="flex space-x-2">
             <Button to={`/products/${id}`} variant="secondary" size="sm">

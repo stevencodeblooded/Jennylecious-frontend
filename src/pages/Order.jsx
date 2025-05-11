@@ -36,7 +36,7 @@ const Order = () => {
 
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          {/* <div className="bg-white rounded-lg shadow-md p-6 mb-8">
             <h2 className="text-xl font-semibold text-gray-800 mb-4">
               Order Information
             </h2>
@@ -74,7 +74,7 @@ const Order = () => {
                 deposit is required to confirm your order.
               </p>
             </div>
-          </div>
+          </div> */}
 
           <OrderForm />
 

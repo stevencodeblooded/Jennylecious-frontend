@@ -25,6 +25,20 @@ const FeaturedProducts = () => {
     fetchFeaturedProducts();
   }, []);
 
+  const formatPrice = (price) => {
+    // Parse the price to a number first
+    const numPrice = parseFloat(price);
+
+    // Check if the price has decimal part
+    const hasCents = numPrice % 1 !== 0;
+
+    // Format with appropriate decimal places
+    return numPrice.toLocaleString("en-KE", {
+      minimumFractionDigits: hasCents ? 2 : 0,
+      maximumFractionDigits: 2,
+    });
+  };
+
   if (loading) {
     return (
       <section className="py-16 bg-white">
@@ -125,7 +139,7 @@ const FeaturedProducts = () => {
                 </p>
                 <div className="flex items-center justify-between mt-auto">
                   <span className="text-lg font-bold text-pink-500">
-                    ${parseFloat(product.price).toFixed(2)}
+                    Kes {formatPrice(product.price)}
                   </span>
                   <Button
                     to={`/products/${product._id}`}

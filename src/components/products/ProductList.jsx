@@ -12,6 +12,12 @@ const ProductList = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [productsPerPage] = useState(9); // Show 9 products per page (3x3 grid)
+  const [totalPages, setTotalPages] = useState(1);
+  const [currentProducts, setCurrentProducts] = useState([]);
+
   // Fetch products and categories from API
   useEffect(() => {
     const fetchData = async () => {
@@ -86,7 +92,36 @@ const ProductList = () => {
     }
 
     setFilteredProducts(result);
+    // Reset to first page when filters change
+    setCurrentPage(1);
   }, [products, selectedCategory, searchTerm, dietaryFilter]);
+
+  // Update pagination whenever filtered products change
+  useEffect(() => {
+    if (filteredProducts.length === 0) {
+      setCurrentProducts([]);
+      setTotalPages(1);
+      return;
+    }
+
+    // Calculate total pages
+    const total = Math.ceil(filteredProducts.length / productsPerPage);
+    setTotalPages(total);
+
+    // Get current products
+    const indexOfLastProduct = currentPage * productsPerPage;
+    const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
+    setCurrentProducts(
+      filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct)
+    );
+  }, [filteredProducts, currentPage, productsPerPage]);
+
+  // Handle page change
+  const handlePageChange = (pageNumber) => {
+    // Scroll to top when changing pages
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    setCurrentPage(pageNumber);
+  };
 
   // Handle dietary filter changes
   const handleDietaryFilterChange = (filter) => {
@@ -102,12 +137,150 @@ const ProductList = () => {
     setSelectedCategory("all");
     setSearchTerm("");
     setDietaryFilter([]);
+    setCurrentPage(1);
   };
 
   // Get category name by id
-  const getCategoryName = (categoryId) => {
-    const category = categories.find((cat) => cat.id === categoryId);
-    return category ? category.name : "All Products";
+  // const getCategoryName = (categoryName) => {
+  //   // Since we're already using the name, we can just return it
+  //   return categoryName;
+  // };
+
+  // Generate pagination buttons
+  const renderPaginationButtons = () => {
+    let buttons = [];
+
+    // Previous button
+    buttons.push(
+      <button
+        key="prev"
+        onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+        disabled={currentPage === 1}
+        className={`px-3 py-1 rounded-md ${
+          currentPage === 1
+            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+            : "bg-white text-gray-700 hover:bg-gray-50"
+        } border border-gray-300`}
+        aria-label="Previous page"
+      >
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M15 19l-7-7 7-7"
+          />
+        </svg>
+      </button>
+    );
+
+    // Page number buttons
+    const maxVisibleButtons = 5;
+    const halfVisible = Math.floor(maxVisibleButtons / 2);
+
+    let startPage = Math.max(1, currentPage - halfVisible);
+    let endPage = Math.min(totalPages, startPage + maxVisibleButtons - 1);
+
+    if (endPage - startPage + 1 < maxVisibleButtons) {
+      startPage = Math.max(1, endPage - maxVisibleButtons + 1);
+    }
+
+    // First page button (if not visible)
+    if (startPage > 1) {
+      buttons.push(
+        <button
+          key="first"
+          onClick={() => handlePageChange(1)}
+          className="px-3 py-1 bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 rounded-md"
+        >
+          1
+        </button>
+      );
+
+      if (startPage > 2) {
+        buttons.push(
+          <span key="ellipsis1" className="px-3 py-1">
+            ...
+          </span>
+        );
+      }
+    }
+
+    // Page numbers
+    for (let i = startPage; i <= endPage; i++) {
+      buttons.push(
+        <button
+          key={i}
+          onClick={() => handlePageChange(i)}
+          className={`px-3 py-1 rounded-md ${
+            currentPage === i
+              ? "bg-pink-500 text-white"
+              : "bg-white text-gray-700 hover:bg-gray-50"
+          } border border-gray-300`}
+        >
+          {i}
+        </button>
+      );
+    }
+
+    // Last page button (if not visible)
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        buttons.push(
+          <span key="ellipsis2" className="px-3 py-1">
+            ...
+          </span>
+        );
+      }
+
+      buttons.push(
+        <button
+          key="last"
+          onClick={() => handlePageChange(totalPages)}
+          className="px-3 py-1 bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 rounded-md"
+        >
+          {totalPages}
+        </button>
+      );
+    }
+
+    // Next button
+    buttons.push(
+      <button
+        key="next"
+        onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+        disabled={currentPage === totalPages}
+        className={`px-3 py-1 rounded-md ${
+          currentPage === totalPages
+            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+            : "bg-white text-gray-700 hover:bg-gray-50"
+        } border border-gray-300`}
+        aria-label="Next page"
+      >
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 5l7 7-7 7"
+          />
+        </svg>
+      </button>
+    );
+
+    return buttons;
   };
 
   if (isLoading) {
@@ -190,11 +363,11 @@ const ProductList = () => {
                 >
                   <button
                     className={`text-left w-full py-2 px-2 rounded-md ${
-                      selectedCategory === category.id
+                      selectedCategory === category.name // Use name instead of id
                         ? "bg-pink-100 text-pink-700 font-medium"
                         : "text-gray-600 hover:bg-gray-100"
                     }`}
-                    onClick={() => setSelectedCategory(category.id)}
+                    onClick={() => setSelectedCategory(category.name)} // Set name instead of id
                   >
                     {category.name}
                   </button>
@@ -252,22 +425,33 @@ const ProductList = () => {
         <div className="lg:w-3/4">
           <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
             <h2 className="text-2xl font-semibold text-gray-800 mb-2 sm:mb-0">
-              {selectedCategory === "all"
-                ? "All Products"
-                : getCategoryName(selectedCategory)}
+              {selectedCategory === "all" ? "All Products" : selectedCategory}{" "}
+              {/* Just use the category name directly */}
             </h2>
             <p className="text-gray-600">
-              Showing {filteredProducts.length} product
+              Showing {currentProducts.length} of {filteredProducts.length}{" "}
+              product
               {filteredProducts.length !== 1 ? "s" : ""}
             </p>
           </div>
 
           {filteredProducts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredProducts.map((product) => (
-                <ProductCard key={product._id} product={product} />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                {currentProducts.map((product) => (
+                  <ProductCard key={product._id} product={product} />
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="mt-8 flex justify-center">
+                  <div className="flex space-x-2 items-center">
+                    {renderPaginationButtons()}
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
             <div className="bg-gray-50 rounded-lg p-8 text-center">
               <svg

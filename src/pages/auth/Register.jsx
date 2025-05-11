@@ -300,7 +300,7 @@ const Register = () => {
                 </div>
               </form>
 
-              <div className="text-center mt-8">
+              {/* <div className="text-center mt-8">
                 <p className="text-gray-600 mb-4">Or sign up with</p>
                 <div className="flex justify-center space-x-4">
                   <button
@@ -316,7 +316,7 @@ const Register = () => {
                     Google
                   </button>
                 </div>
-              </div>
+              </div> */}
 
               <div className="text-center mt-8">
                 <p className="text-gray-600">

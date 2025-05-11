@@ -104,6 +104,21 @@ const ProductDetails = () => {
     );
   }
 
+  // Function to format price with commas and optional decimals
+  const formatPrice = (price) => {
+    // Parse the price to a number first
+    const numPrice = parseFloat(price);
+
+    // Check if the price has decimal part
+    const hasCents = numPrice % 1 !== 0;
+
+    // Format with appropriate decimal places
+    return numPrice.toLocaleString("en-KE", {
+      minimumFractionDigits: hasCents ? 2 : 0,
+      maximumFractionDigits: 2,
+    });
+  };
+
   return (
     <div className="container mx-auto px-4 py-12">
       {/* Back button */}
@@ -145,8 +160,9 @@ const ProductDetails = () => {
           <h1 className="text-3xl font-bold text-gray-800 mb-2">
             {product.name}
           </h1>
-          <p className="text-2xl font-semibold text-pink-500 mb-4">
-            ${parseFloat(product.price).toFixed(2)}
+
+          <p className="text-2xl font-bold text-pink-500 mb-4">
+            Kes {formatPrice(product.price)}
           </p>
 
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">

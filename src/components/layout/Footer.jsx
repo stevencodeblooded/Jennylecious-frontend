@@ -145,7 +145,7 @@ const Footer = () => {
                   />
                 </svg>
                 <span className="text-gray-300">
-                  123 Baker Street, Sweet City, SC 12345
+                  123 Baker Street, Nairobi, Kenya
                 </span>
               </li>
               <li className="flex items-start">

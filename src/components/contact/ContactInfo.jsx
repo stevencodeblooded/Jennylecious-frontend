@@ -39,9 +39,7 @@ const ContactInfo = () => {
             <p className="mt-1 text-gray-600">
               123 Baker Street
               <br />
-              Sweet City, SC 12345
-              <br />
-              United States
+              Nairobi, Kenya
             </p>
           </div>
         </div>

@@ -7,16 +7,6 @@ const ProductCategories = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Category background images (would be real images in production)
-  const categoryImages = {
-    cakes: "/assets/images/categories/cakes.jpg",
-    cupcakes: "/assets/images/categories/cupcakes.jpg",
-    cookies: "/assets/images/categories/cookies.jpg",
-    wedding: "/assets/images/categories/wedding.jpg",
-    pastries: "/assets/images/categories/pastries.jpg",
-    "dietary-specific": "/assets/images/categories/dietary.jpg",
-  };
-
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -36,17 +26,23 @@ const ProductCategories = () => {
 
   if (loading) {
     return (
-      <section className="py-12 bg-pink-50">
+      <section className="py-8 bg-pink-50">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <div className="h-10 bg-gray-200 rounded-md w-64 mx-auto mb-4 animate-pulse"></div>
-            <div className="h-4 bg-gray-200 rounded-md max-w-3xl mx-auto mb-2 animate-pulse"></div>
-            <div className="h-4 bg-gray-200 rounded-md max-w-2xl mx-auto animate-pulse"></div>
+          <div className="text-center mb-6">
+            <div className="h-8 bg-gray-200 rounded-md w-64 mx-auto mb-3 animate-pulse"></div>
+            <div className="h-3 bg-gray-200 rounded-md max-w-lg mx-auto mb-2 animate-pulse"></div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="rounded-lg overflow-hidden shadow-md">
-                <div className="aspect-w-16 aspect-h-9 bg-gray-200 animate-pulse"></div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+              <div
+                key={i}
+                className="rounded-lg overflow-hidden shadow-sm h-64"
+              >
+                <div className="h-40 bg-gray-200 animate-pulse"></div>
+                <div className="p-3 bg-white h-24">
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2 animate-pulse"></div>
+                  <div className="h-3 bg-gray-200 rounded w-full animate-pulse"></div>
+                </div>
               </div>
             ))}
           </div>
@@ -57,16 +53,16 @@ const ProductCategories = () => {
 
   if (error) {
     return (
-      <section className="py-12 bg-pink-50">
+      <section className="py-8 bg-pink-50">
         <div className="container mx-auto px-4">
           <div className="text-center">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-3">
               Unable to Load Categories
             </h2>
-            <p className="text-gray-600 max-w-3xl mx-auto mb-6">{error}</p>
+            <p className="text-gray-600 max-w-lg mx-auto mb-4">{error}</p>
             <button
               onClick={() => window.location.reload()}
-              className="bg-pink-500 hover:bg-pink-600 text-white font-medium py-2 px-6 rounded-md transition-colors"
+              className="bg-pink-500 hover:bg-pink-600 text-white font-medium py-2 px-5 rounded-md transition-colors"
             >
               Try Again
             </button>
@@ -77,44 +73,42 @@ const ProductCategories = () => {
   }
 
   return (
-    <section className="py-12 bg-pink-50">
+    <section className="py-8 bg-pink-50">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
+        <div className="text-center mb-6">
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
             Shop by <span className="text-pink-500">Category</span>
           </h2>
-          <p className="text-gray-600 max-w-3xl mx-auto">
+          <p className="text-gray-600 max-w-lg mx-auto text-sm md:text-base">
             Browse our delightful selection of treats, from custom cakes to
-            artisanal pastries. Find the perfect sweet indulgence for any
-            occasion.
+            artisanal pastries.
           </p>
         </div>
 
         {categories.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
             {categories.map((category) => (
               <Link
                 key={category._id}
                 to={`/products?category=${category._id}`}
-                className="group relative block rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow"
+                className="group bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow h-64 flex flex-col"
               >
-                <div className="aspect-w-16 aspect-h-9 bg-gray-200">
+                {/* Fixed height image container */}
+                <div className="relative h-40 overflow-hidden">
                   <img
-                    src={
-                      category.image ||
-                      categoryImages[category.slug] ||
-                      "/assets/images/categories/default.jpg"
-                    }
+                    src={category.image}
                     alt={category.name}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-70"></div>
                 </div>
-                <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                  <h3 className="text-xl font-semibold mb-1 group-hover:text-pink-300 transition-colors">
+
+                {/* Fixed height text container */}
+                <div className="flex-grow p-3 bg-white z-10 relative -mt-5 mx-2 rounded-md shadow-sm bg-opacity-95">
+                  <h3 className="text-base font-semibold text-gray-800 group-hover:text-pink-500 transition-colors line-clamp-1 mb-1">
                     {category.name}
                   </h3>
-                  <p className="text-sm text-gray-200">
+                  <p className="text-xs text-gray-600 line-clamp-2 h-8">
                     {category.description}
                   </p>
                 </div>
@@ -122,7 +116,7 @@ const ProductCategories = () => {
             ))}
           </div>
         ) : (
-          <div className="text-center py-12">
+          <div className="text-center py-8">
             <p className="text-gray-600">
               No categories found. Check back soon!
             </p>

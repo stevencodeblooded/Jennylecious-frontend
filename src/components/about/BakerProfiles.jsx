@@ -1,4 +1,8 @@
 import React from "react";
+import profile1 from "../../assets/images/team/profile1.png";
+import profile2 from "../../assets/images/team/profile2.png";
+import profile3 from "../../assets/images/team/profile3.png";
+import profile4 from "../../assets/images/team/profile4.png";
 
 const BakerProfiles = () => {
   const teamMembers = [
@@ -6,7 +10,7 @@ const BakerProfiles = () => {
       id: 1,
       name: "Jenny Lee",
       role: "Founder & Head Baker",
-      image: "/assets/images/team/jenny.jpg",
+      image: profile1,
       bio: "With over 15 years of baking experience, Jenny is the creative force behind Jennylecious. Her passion for baking started in her grandmother's kitchen and has evolved into a lifelong commitment to the craft.",
       specialties: ["Wedding Cakes", "Custom Designs", "French Pastries"],
     },
@@ -14,7 +18,7 @@ const BakerProfiles = () => {
       id: 2,
       name: "Michael Rodriguez",
       role: "Pastry Chef",
-      image: "/assets/images/team/michael.jpg",
+      image: profile2,
       bio: "A graduate of Le Cordon Bleu, Michael brings classical training and innovative techniques to our kitchen. His attention to detail and commitment to perfection make him an invaluable part of our team.",
       specialties: ["Artisan Bread", "Croissants", "Chocolate Work"],
     },
@@ -22,7 +26,7 @@ const BakerProfiles = () => {
       id: 3,
       name: "Sarah Johnson",
       role: "Cake Designer",
-      image: "/assets/images/team/sarah.jpg",
+      image: profile3,
       bio: "Sarah's background in fine arts gives her a unique perspective on cake design. She specializes in creating stunningly beautiful and structurally sound cakes that are true edible masterpieces.",
       specialties: ["3D Cakes", "Sugar Flowers", "Artistic Finishes"],
     },
@@ -30,7 +34,7 @@ const BakerProfiles = () => {
       id: 4,
       name: "David Chen",
       role: "Baker & Customer Relations",
-      image: "/assets/images/team/david.jpg",
+      image: profile4,
       bio: "David combines his baking skills with excellent customer service to ensure that each client's vision is brought to life perfectly. His friendly demeanor and attention to client needs make him a customer favorite.",
       specialties: ["Cupcakes", "Cookie Designs", "Customer Consultations"],
     },
@@ -54,21 +58,23 @@ const BakerProfiles = () => {
           {teamMembers.map((member) => (
             <div
               key={member.id}
-              className="bg-white rounded-lg overflow-hidden shadow-md"
+              className="bg-white rounded-lg overflow-hidden shadow-md flex flex-col h-full"
             >
-              <div className="aspect-w-1 aspect-h-1 relative">
+              <div className="h-64 overflow-hidden">
                 <img
                   src={member.image}
                   alt={member.name}
-                  className="w-full h-64 object-cover"
+                  className="w-full h-full object-cover"
                 />
               </div>
-              <div className="p-6">
+              <div className="p-6 flex-1 flex flex-col">
                 <h3 className="text-xl font-semibold text-gray-800 mb-1">
                   {member.name}
                 </h3>
                 <p className="text-pink-500 font-medium mb-4">{member.role}</p>
-                <p className="text-gray-600 mb-4 text-sm">{member.bio}</p>
+                <p className="text-gray-600 mb-4 text-sm flex-1">
+                  {member.bio}
+                </p>
                 <div>
                   <h4 className="text-sm font-semibold text-gray-700 mb-2">
                     Specialties:
