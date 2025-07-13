@@ -6,7 +6,7 @@ const AuthContext = createContext(null);
 
 // API base URL from environment variable
 // const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
-const API_URL = "https://mature-flame-tilapia.glitch.me/api";
+const API_URL = "https://jennylecious-backend.vercel.app/api";
 
 // Create API instance with authentication handling
 const authAPI = axios.create({
